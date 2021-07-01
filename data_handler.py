@@ -22,6 +22,7 @@ def _read_files(mode, sentiment, cutoff):
     return reviews
 
 
+@utility.measure_time
 def load(kwargs):
     """
             Load reviews into a list.
@@ -101,6 +102,7 @@ def _map_numbers(reviews):
     )
 
 
+@utility.measure_time
 def clean(reviews):
     return utility.pipe(
         reviews,
