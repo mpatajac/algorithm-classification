@@ -38,7 +38,7 @@ def load(kwargs):
         "train", "test"], f"Invalid mode: expected \"train\" or \"test\", got \"{kwargs['mode']}\"."
 
     mode = kwargs["mode"]
-    cutoff = int(kwargs["cutoff"]) if kwargs["cutoff"] else 25000
+    cutoff = int(kwargs["cutoff"]) if "cutoff" in kwargs.keys() else 25000
 
     return _read_files(mode, "pos", cutoff) + _read_files(mode, "neg", cutoff)
 
