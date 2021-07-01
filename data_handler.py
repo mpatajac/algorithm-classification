@@ -2,6 +2,7 @@ import os
 import utility
 import re
 import string
+from num2words import num2words
 
 # -----------------------------------------------------------------------------
 
@@ -85,7 +86,15 @@ def _split_words(reviews):
     )
 
 
-def _map_numbers(reviews): pass
+def _map_numbers(reviews):
+    # replace all numbers with their word representations
+    return list(
+        map(
+            lambda review: re.sub(
+                "\d+", num2words(review.group(0)), review
+            ), reviews
+        )
+    )
 
 
 def clean(reviews):
