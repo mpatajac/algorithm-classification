@@ -1,2 +1,5 @@
 # too large, leave out of commits
 /data
+
+# compiled code
+__pycache__

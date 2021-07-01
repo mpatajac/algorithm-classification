@@ -50,7 +50,7 @@ def _remove_br(reviews):
         map(
             # pretty sure there are always two `br`s in a row
             # but removing them individually, just in case
-            lambda review: re.sub("<br />", "", review), reviews
+            lambda review: re.sub("<br />", " ", review), reviews
         )
     )
 
@@ -78,6 +78,10 @@ def _collapse_spaces(reviews):
     )
 
 
+def _lower_text(reviews):
+    return list(map(str.lower, reviews))
+
+
 def _split_words(reviews):
     return list(
         map(
@@ -91,7 +95,7 @@ def _map_numbers(reviews):
     return list(
         map(
             lambda review: re.sub(
-                "\d+", num2words(review.group(0)), review
+                "\d+", lambda n: num2words(n.group(0)), review
             ), reviews
         )
     )
@@ -103,9 +107,9 @@ def clean(reviews):
         _remove_br,
         _remove_puctuation,
         _collapse_spaces,
-        str.lower,
+        _lower_text,
+        _map_numbers,
         _split_words,
-        _map_numbers
     )
 
 
@@ -113,5 +117,10 @@ def clean(reviews):
 
 
 if __name__ == "__main__":
-    reviews = load({"mode": "train", "cutoff": 2})
-    [print(review + '\n') for review in reviews]
+    reviews = utility.pipe(
+        {"mode": "train", "cutoff": 2},
+        load,
+        clean
+    )
+
+    [print(review) for review in reviews]
