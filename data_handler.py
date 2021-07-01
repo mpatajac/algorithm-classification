@@ -1,4 +1,7 @@
 import os
+import utility
+import re
+import string
 
 # -----------------------------------------------------------------------------
 
@@ -37,6 +40,65 @@ def load(kwargs):
     cutoff = int(kwargs["cutoff"]) if kwargs["cutoff"] else 25000
 
     return _read_files(mode, "pos", cutoff) + _read_files(mode, "neg", cutoff)
+
+# -----------------------------------------------------------------------------
+
+
+def _remove_br(reviews):
+    return list(
+        map(
+            # pretty sure there are always two `br`s in a row
+            # but removing them individually, just in case
+            lambda review: re.sub("<br />", "", review), reviews
+        )
+    )
+
+
+def _remove_puctuation(reviews):
+    # we want to remove all punctuation
+    # except for dashes and apostrophes
+    characters_to_remove = re.sub("-|'", "", string.punctuation)
+    return list(
+        map(
+            lambda review: re.sub(
+                f"[{characters_to_remove}]", "", review
+            ), reviews
+        )
+    )
+
+
+def _collapse_spaces(reviews):
+    return list(
+        map(
+            # remove multiple successive whitespace characters
+            # with a single space
+            lambda review: re.sub("\s+", " ", review), reviews
+        )
+    )
+
+
+def _split_words(reviews):
+    return list(
+        map(
+            lambda review: review.split(), reviews
+        )
+    )
+
+
+def _map_numbers(reviews): pass
+
+
+def clean(reviews):
+    return utility.pipe(
+        reviews,
+        _remove_br,
+        _remove_puctuation,
+        _collapse_spaces,
+        str.lower,
+        _split_words,
+        _map_numbers
+    )
+
 
 # -----------------------------------------------------------------------------
 
