@@ -117,12 +117,46 @@ def clean(reviews):
 
 # -----------------------------------------------------------------------------
 
+def _build_dictionary():
+    with open("./data/imdb.vocab", "r", encoding="utf-8") as vocab:
+        # remove `\n` from the end of each word
+        words = list(map(str.strip, vocab.readlines()))
+
+        # assign `<pad>` to index 0 (to use 0 as pad value)
+        i2w = ['<pad>'] + words + ['<unk>']
+
+        w2i = {word: idx for (idx, word) in enumerate(i2w)}
+
+    return w2i
+
+
+def _map_to_indices(reviews, word_mapping):
+    return list(map(
+        lambda review: list(map(
+            lambda word:
+                word_mapping[
+                    word if word in word_mapping.keys() else "<unk>"
+                ], review
+        )), reviews
+    ))
+
+
+@utility.measure_time
+def index(reviews):
+    # since we are doing sequence classification,
+    # we only need word-to-index mapping
+    word_mapping = _build_dictionary()
+    return _map_to_indices(reviews, word_mapping)
+
+# -----------------------------------------------------------------------------
+
 
 if __name__ == "__main__":
     reviews = utility.pipe(
         {"mode": "train", "cutoff": 2},
         load,
-        clean
+        clean,
+        index
     )
 
     [print(review) for review in reviews]
