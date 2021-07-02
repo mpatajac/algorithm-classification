@@ -4,6 +4,7 @@ import re
 import string
 from num2words import num2words
 from torch.nn.utils.rnn import pad_sequence
+from torch.utils.data import Dataset, DataLoader
 
 # -----------------------------------------------------------------------------
 
@@ -126,6 +127,19 @@ def index(reviews):
     return _map_to_indices(reviews, word_mapping)
 
 # -----------------------------------------------------------------------------
+
+
+class ReviewDataset(Dataset):
+    def __init__(self, X, y):
+        super().__init__()
+        self.X = X
+        self.y = y
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, index):
+        return self.X[index], self.y[index]
 
 
 def pad_collate(batch):
