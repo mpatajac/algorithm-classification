@@ -35,6 +35,16 @@ def pipe(data, *args):
         data = f(data)
     return data
 
+
+# -------------------------------------------------------
+# Map function series to an iterable
+
+def pipe_map(iterable, *args):
+    return map(
+        lambda i: pipe(i, *args),
+        iterable
+    )
+
 # -------------------------------------------------------
 # -------------------------------------------------------
 # Tests
@@ -57,5 +67,22 @@ def pipe_test():
     assert(result == [1, 9, 25, 49, 81]), "`Pipe` test failed."
 
 
+def pipe_map_test():
+    data = [1, 2, 3, 4, 5]
+    def func1(x): return x * 2
+    def func2(x): return x - 1
+    def func3(x): return x**2
+
+    result = list(pipe_map(
+        data,
+        func1,
+        func2,
+        func3
+    ))
+
+    assert(result == [1, 9, 25, 49, 81]), "`Pipe Map` test failed."
+
+
 if __name__ == "__main__":
     pipe_test()
+    pipe_map_test()
