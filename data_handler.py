@@ -2,6 +2,7 @@ import os
 import utility
 import re
 import string
+import torch
 from num2words import num2words
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset, DataLoader
@@ -155,15 +156,45 @@ def pad_collate(batch):
     return padded_reviews, sentiments, review_lengths
 
 
+def _create_labels(review_count):
+    # first half of the reviews are positive, other half is negative
+    per_category = review_count // 2
+    return [1 for _ in range(per_category)] + [0 for _ in range(per_category)]
+
+
+def _convert_to_tensor(reviews, labels):
+    reviews = [torch.tensor(review) for review in reviews]
+    labels = torch.tensor(labels)
+
+    return reviews, labels
+
+
+@utility.measure_time
+def to_loader(reviews):
+    labels = _create_labels(len(reviews))
+    reviews, labels = _convert_to_tensor(reviews, labels)
+    dataset = ReviewDataset(reviews, labels)
+
+    # TODO?: `batch_size` as a variable
+    dataloader = DataLoader(
+        dataset=dataset,
+        batch_size=64,
+        shuffle=True,
+        collate_fn=pad_collate
+    )
+
+    return dataloader
+
+
 # -----------------------------------------------------------------------------
 
 
 if __name__ == "__main__":
-    reviews = utility.pipe(
+    loader = utility.pipe(
         {"mode": "train", "cutoff": 2},
+        # {"mode": "train"},
         load,
         clean,
-        index
+        index,
+        to_loader
     )
-
-    [print(review) for review in reviews]
