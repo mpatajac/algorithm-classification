@@ -189,12 +189,29 @@ def to_loader(reviews):
 # -----------------------------------------------------------------------------
 
 
-if __name__ == "__main__":
-    loader = utility.pipe(
-        {"mode": "train", "cutoff": 2},
-        # {"mode": "train"},
+@utility.measure_time
+def get(mode, cutoff=None):
+    assert mode in ["train", "test"]
+    assert 1 <= cutoff <= 25000
+
+    if cutoff is None:
+        cutoff = 25000
+
+    # TODO?: save and load data(loader) to/from file
+    return utility.pipe(
+        {
+            "mode": mode,
+            "cutoff": cutoff
+        },
         load,
         clean,
         index,
         to_loader
     )
+
+# -----------------------------------------------------------------------------
+
+
+if __name__ == "__main__":
+    # loader = get(mode="train")
+    loader = get(mode="train", cutoff=2)
