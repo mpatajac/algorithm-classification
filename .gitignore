@@ -3,3 +3,6 @@
 
 # compiled code
 __pycache__
+
+# editor settings
+.vscode
