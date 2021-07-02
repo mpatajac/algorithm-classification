@@ -46,65 +46,41 @@ def load(kwargs):
 # -----------------------------------------------------------------------------
 
 
-def _remove_br(reviews):
-    return list(
-        map(
-            # pretty sure there are always two `br`s in a row
-            # but removing them individually, just in case
-            lambda review: re.sub("<br />", " ", review), reviews
-        )
-    )
+def _remove_br(review):
+    # pretty sure there are always two `br`s in a row
+    # but removing them individually, just in case
+    return re.sub("<br />", " ", review)
 
 
-def _remove_puctuation(reviews):
+def _remove_puctuation(review):
     # we want to remove all punctuation
     # except for dashes and apostrophes
     characters_to_remove = re.sub("-|'", "", string.punctuation)
-    return list(
-        map(
-            lambda review: re.sub(
-                f"[{characters_to_remove}]", "", review
-            ), reviews
-        )
-    )
+    return re.sub(f"[{characters_to_remove}]", "", review)
 
 
-def _collapse_spaces(reviews):
-    return list(
-        map(
-            # remove multiple successive whitespace characters
-            # with a single space
-            lambda review: re.sub("\s+", " ", review), reviews
-        )
-    )
+def _collapse_spaces(review):
+    # replace multiple successive whitespace characters
+    # with a single space
+    return re.sub("\s+", " ", review)
 
 
-def _lower_text(reviews):
-    return list(map(str.lower, reviews))
+def _lower_text(review):
+    return review.lower()
 
 
-def _split_words(reviews):
-    return list(
-        map(
-            lambda review: review.split(), reviews
-        )
-    )
-
-
-def _map_numbers(reviews):
+def _map_numbers(review):
     # replace all numbers with their word representations
-    return list(
-        map(
-            lambda review: re.sub(
-                "\d+", lambda n: num2words(n.group(0)), review
-            ), reviews
-        )
-    )
+    return re.sub("\d+", lambda n: num2words(n.group(0)), review)
+
+
+def _split_words(review):
+    return review.split()
 
 
 @utility.measure_time
 def clean(reviews):
-    return utility.pipe(
+    return list(utility.pipe_map(
         reviews,
         _remove_br,
         _remove_puctuation,
@@ -112,7 +88,7 @@ def clean(reviews):
         _lower_text,
         _map_numbers,
         _split_words,
-    )
+    ))
 
 
 # -----------------------------------------------------------------------------
