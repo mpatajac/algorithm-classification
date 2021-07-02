@@ -8,6 +8,10 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset, DataLoader
 
 # -----------------------------------------------------------------------------
+# globals
+vocab_size = 0
+
+# -----------------------------------------------------------------------------
 
 
 def _read_files(mode, sentiment, cutoff):
@@ -97,12 +101,15 @@ def clean(reviews):
 # -----------------------------------------------------------------------------
 
 def _build_dictionary():
+    global vocab_size
+
     with open("./data/imdb.vocab", "r", encoding="utf-8") as vocab:
         # remove `\n` from the end of each word
         words = list(map(str.strip, vocab.readlines()))
 
         # assign `<pad>` to index 0 (to use 0 as pad value)
         i2w = ['<pad>'] + words + ['<unk>']
+        vocab_size = len(i2w)
 
         w2i = {word: idx for (idx, word) in enumerate(i2w)}
 
