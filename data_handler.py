@@ -3,6 +3,7 @@ import utility
 import re
 import string
 from num2words import num2words
+from torch.nn.utils.rnn import pad_sequence
 
 # -----------------------------------------------------------------------------
 
@@ -123,6 +124,22 @@ def index(reviews):
     # we only need word-to-index mapping
     word_mapping = _build_dictionary()
     return _map_to_indices(reviews, word_mapping)
+
+# -----------------------------------------------------------------------------
+
+
+def pad_collate(batch):
+    (reviews, sentiments) = zip(*batch)
+
+    # get original lengths for packing
+    review_lengths = [len(review) for review in reviews]
+
+    # pad sequences to longest in batch
+    # TODO?: set `padding_value` to `w2i["<pad>"]`
+    padded_reviews = pad_sequence(reviews, batch_first=True, padding_value=0)
+
+    return padded_reviews, sentiments, review_lengths
+
 
 # -----------------------------------------------------------------------------
 
