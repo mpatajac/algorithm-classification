@@ -197,12 +197,9 @@ def to_loader(reviews):
 
 
 @utility.measure_time
-def get(mode, cutoff=None):
+def get(mode, cutoff=25000):
     assert mode in ["train", "test"]
     assert 1 <= cutoff <= 25000
-
-    if cutoff is None:
-        cutoff = 25000
 
     # TODO?: save and load data(loader) to/from file
     return utility.pipe(
