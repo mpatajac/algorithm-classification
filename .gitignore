@@ -6,3 +6,7 @@ __pycache__
 
 # editor settings
 .vscode
+
+# the model is going to change very often,
+# so we are ignoring it (for now)
+model.pt

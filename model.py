@@ -1,6 +1,8 @@
 import torch
+import os
 from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence
+from copy import deepcopy
 
 
 class ReviewClassifier(nn.Module):
@@ -38,6 +40,17 @@ class ReviewClassifier(nn.Module):
         decoded = self.sigmoid(decoded)
         return decoded
 
+    @staticmethod
+    def save_model(model, name="model"):
+        model_state = deepcopy(model.state_dict())
+        torch.save(model_state, f"{name}.pt")
+
+    @staticmethod
+    def load_model(model, name="model"):
+        assert os.path.exists(f"{name}.pt")
+        model.load_state_dict(torch.load(f"{name}.pt"))
+        model.eval()
+
 
 if __name__ == "__main__":
     import data_handler
@@ -53,3 +66,9 @@ if __name__ == "__main__":
         print(nn.BCELoss()(
             result.reshape(-1), torch.tensor(labels, dtype=torch.float)
         ))
+
+    ReviewClassifier.save_model(model)
+
+    new_model = ReviewClassifier(data_handler.vocab_size)
+    ReviewClassifier.load_model(new_model)
+    print(new_model(reviews, review_sizes))
