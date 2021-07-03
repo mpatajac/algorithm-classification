@@ -41,12 +41,12 @@ class ReviewClassifier(nn.Module):
         return decoded
 
     @staticmethod
-    def save_model(model, name="model"):
+    def save(model, name="model"):
         model_state = deepcopy(model.state_dict())
         torch.save(model_state, f"{name}.pt")
 
     @staticmethod
-    def load_model(model, name="model"):
+    def load(model, name="model"):
         assert os.path.exists(f"{name}.pt")
         model.load_state_dict(torch.load(f"{name}.pt"))
         model.eval()
@@ -67,8 +67,8 @@ if __name__ == "__main__":
             result.reshape(-1), torch.tensor(labels, dtype=torch.float)
         ))
 
-    ReviewClassifier.save_model(model)
+    ReviewClassifier.save(model)
 
     new_model = ReviewClassifier(data_handler.vocab_size)
-    ReviewClassifier.load_model(new_model)
+    ReviewClassifier.load(new_model)
     print(new_model(reviews, review_sizes))
