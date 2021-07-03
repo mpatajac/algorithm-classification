@@ -127,7 +127,7 @@ def train(
 
 
 @utility.measure_time
-def test(model, test_loader):
+def test(model, test_loader, device):
     # TODO?: provide metrics as an argument
     from sklearn.metrics import accuracy_score
 
@@ -163,7 +163,7 @@ if __name__ == "__main__":
 
     model = ReviewClassifier(data_handler.vocab_size, layers=1)
     train(model, train_loader, device=device, verbose=True)
-    test(model, test_loader)
+    test(model, test_loader, device=device)
 
     # ReviewClassifier.save(model)
     # new_model = ReviewClassifier.load(data_handler.vocab_size)
