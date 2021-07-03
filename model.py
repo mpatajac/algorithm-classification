@@ -47,10 +47,14 @@ class ReviewClassifier(nn.Module):
         torch.save(model_state, f"{name}.pt")
 
     @staticmethod
-    def load(model, name="model"):
+    def load(vocab_size, name="model"):
         assert os.path.exists(f"{name}.pt")
+
+        model = ReviewClassifier(vocab_size)
         model.load_state_dict(torch.load(f"{name}.pt"))
         model.eval()
+
+        return model
 
 
 # -----------------------------------------------------------------------------
@@ -159,5 +163,4 @@ if __name__ == "__main__":
     test(model, test_loader)
 
     ReviewClassifier.save(model)
-    new_model = ReviewClassifier(data_handler.vocab_size)
-    ReviewClassifier.load(new_model)
+    new_model = ReviewClassifier.load(data_handler.vocab_size)
