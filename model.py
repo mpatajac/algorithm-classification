@@ -36,6 +36,8 @@ class ReviewClassifier(nn.Module):
             encoded, input_lengths, batch_first=True, enforce_sorted=False
         )
         _, (state, _) = self.recurrent(packed)
+        # take state from the last layer of LSTM
+        state = state[-1]
         state = self.dropout(state)
         decoded = self.decode(state)
         decoded = self.sigmoid(decoded)
@@ -158,7 +160,7 @@ if __name__ == "__main__":
     train_loader = data_handler.get("train", cutoff=200)
     test_loader = data_handler.get("test", cutoff=20)
 
-    model = ReviewClassifier(data_handler.vocab_size)
+    model = ReviewClassifier(data_handler.vocab_size, layers=2)
     train(model, train_loader, device=device, verbose=True)
     test(model, test_loader)
 
