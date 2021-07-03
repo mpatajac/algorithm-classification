@@ -119,7 +119,8 @@ def train(
             optimizer.step()
 
         if verbose:
-            print(f"Epoch #{epoch + 1}: {loss.item()}")
+            average_loss = sum(loss_values)/len(loss_values)
+            print(f"Epoch #{epoch + 1}: {average_loss}")
 
     if graphic:
         _plot_loss(loss_values)
