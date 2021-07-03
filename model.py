@@ -142,6 +142,7 @@ def test(model, test_loader):
 
     accuracy = accuracy_score(labels, predictions)
     print(f"Accuracy: {_format_percentage(accuracy)}")
+    return accuracy
 
 
 # -----------------------------------------------------------------------------
