@@ -62,6 +62,25 @@ def _plot_loss(loss_values):
     plt.show()
 
 
+def _format_percentage(value, precision=2):
+    return f"{round(value, precision)}%"
+
+
+def _extract_labels(labels):
+    return [label.item() for label in labels]
+
+
+def _extract_predictions(predictions, classify=round):
+    """
+        Argument `classify` determines how to map
+        predictions given by the model (in range [0, 1])
+        to a binary set of labels ({0, 1}).
+
+        By default, rounding is used ([0, .5] -> 0, (.5, 1] -> 1)
+    """
+    return [classify(prediction.item()) for prediction in predictions]
+
+
 @utility.measure_time
 def train(
     model,
@@ -100,9 +119,32 @@ def train(
         _plot_loss(loss_values)
 
 
+@utility.measure_time
+def test(model, test_loader):
+    # TODO?: provide metrics as an argument
+    from sklearn.metrics import accuracy_score
+
+    all_predictions = torch.tensor([])
+    all_labels = []
+
+    model.eval()
+    for (reviews, labels, review_sizes) in test_loader:
+        all_labels.extend(labels)
+
+        reviews = reviews.to(device)
+        predictions = model(reviews, review_sizes).reshape(-1)
+        all_predictions = torch.cat((
+            all_predictions, predictions.cpu().detach()
+        ))
+
+    predictions = _extract_predictions(all_predictions)
+    labels = _extract_labels(all_labels)
+
+    accuracy = accuracy_score(labels, predictions)
+    print(f"Accuracy: {_format_percentage(accuracy)}")
+
+
 # -----------------------------------------------------------------------------
-
-
 if __name__ == "__main__":
     import data_handler
 
@@ -112,18 +154,9 @@ if __name__ == "__main__":
     test_loader = data_handler.get("test", cutoff=20)
 
     model = ReviewClassifier(data_handler.vocab_size)
-    train(model, train_loader, device=device, verbose=True, graphic=True)
-
-    model.eval()
-    for (reviews, labels, review_sizes) in test_loader:
-        result = model(reviews.to(device), review_sizes)
-        print("\nLoss:", end="\t")
-        print(nn.BCELoss()(
-            result.reshape(-1),
-            torch.tensor(labels, dtype=torch.float).to(device)
-        ))
+    train(model, train_loader, device=device, verbose=True)
+    test(model, test_loader)
 
     ReviewClassifier.save(model)
-
     new_model = ReviewClassifier(data_handler.vocab_size)
     ReviewClassifier.load(new_model)
