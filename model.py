@@ -67,7 +67,7 @@ def _plot_loss(loss_values):
 
 
 def _format_percentage(value, precision=2):
-    return f"{round(value, precision)}%"
+    return f"{round(value * 100, precision)}%"
 
 
 def _extract_labels(labels):
