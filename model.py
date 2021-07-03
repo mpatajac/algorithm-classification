@@ -53,7 +53,7 @@ class ReviewClassifier(nn.Module):
         assert os.path.exists(f"{name}.pt")
 
         model = ReviewClassifier(vocab_size)
-        model.load_state_dict(torch.load(f"{name}.pt"), strict=False)
+        model.load_state_dict(torch.load(f"{name}.pt"))
         model.eval()
 
         return model
