@@ -1,5 +1,6 @@
 import torch
 import os
+import utility
 from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence
 from copy import deepcopy
@@ -52,23 +53,77 @@ class ReviewClassifier(nn.Module):
         model.eval()
 
 
+# -----------------------------------------------------------------------------
+
+
+def _plot_loss(loss_values):
+    import matplotlib.pyplot as plt
+    plt.plot(range(1, len(loss_values)+1), loss_values)
+    plt.show()
+
+
+@utility.measure_time
+def train(
+    model,
+    train_loader,
+    epochs=2,
+    device="cpu",
+    verbose=False,
+    graphic=False
+):
+    loss_values = []
+    loss_fn = nn.BCELoss()
+
+    model.to(device)
+    model.train()
+    optimizer = torch.optim.RMSprop(
+        model.parameters(), lr=1e-3, momentum=.9
+    )
+
+    for epoch in range(epochs):
+        for (reviews, labels, review_sizes) in train_loader:
+            reviews = reviews.to(device)
+            labels = torch.tensor(labels, dtype=torch.float).to(device)
+
+            predictions = model(reviews, review_sizes).reshape(-1)
+            loss = loss_fn(predictions, labels)
+            loss_values.append(loss.item())
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+        if verbose:
+            print(f"Epoch #{epoch + 1}: {loss.item()}")
+
+    if graphic:
+        _plot_loss(loss_values)
+
+
+# -----------------------------------------------------------------------------
+
+
 if __name__ == "__main__":
     import data_handler
 
-    train_loader = data_handler.get("train", cutoff=2)
-    model = ReviewClassifier(data_handler.vocab_size)
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-    for (reviews, labels, review_sizes) in train_loader:
-        result = model(reviews, review_sizes)
-        print(f"Result:\t{result}")
-        print(f"\nLabels:\t{labels}")
+    train_loader = data_handler.get("train", cutoff=200)
+    test_loader = data_handler.get("test", cutoff=20)
+
+    model = ReviewClassifier(data_handler.vocab_size)
+    train(model, train_loader, device=device, verbose=True, graphic=True)
+
+    model.eval()
+    for (reviews, labels, review_sizes) in test_loader:
+        result = model(reviews.to(device), review_sizes)
         print("\nLoss:", end="\t")
         print(nn.BCELoss()(
-            result.reshape(-1), torch.tensor(labels, dtype=torch.float)
+            result.reshape(-1),
+            torch.tensor(labels, dtype=torch.float).to(device)
         ))
 
     ReviewClassifier.save(model)
 
     new_model = ReviewClassifier(data_handler.vocab_size)
     ReviewClassifier.load(new_model)
-    print(new_model(reviews, review_sizes))
