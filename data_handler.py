@@ -48,6 +48,7 @@ def load(kwargs):
     mode = kwargs["mode"]
     cutoff = int(kwargs["cutoff"]) if "cutoff" in kwargs.keys() else 25000
 
+    print(f"Preparing {2 * cutoff} reviews from the {mode} set...")
     return _read_files(mode, "pos", cutoff) + _read_files(mode, "neg", cutoff)
 
 # -----------------------------------------------------------------------------
