@@ -161,10 +161,10 @@ if __name__ == "__main__":
     train_loader = data_handler.get("train", cutoff=200)
     test_loader = data_handler.get("test", cutoff=20)
 
-    model = ReviewClassifier(data_handler.vocab_size, layers=2)
+    model = ReviewClassifier(data_handler.vocab_size, layers=1)
     train(model, train_loader, device=device, verbose=True)
     test(model, test_loader)
 
-    ReviewClassifier.save(model)
-    new_model = ReviewClassifier.load(data_handler.vocab_size)
-    test(new_model.to(device), test_loader)
+    # ReviewClassifier.save(model)
+    # new_model = ReviewClassifier.load(data_handler.vocab_size)
+    # test(new_model.to(device), test_loader)
