@@ -149,6 +149,7 @@ def test(model, test_loader, device):
     all_predictions = torch.tensor([])
     all_labels = []
 
+    model.to(device)
     model.eval()
     for (reviews, labels, review_sizes) in test_loader:
         all_labels.extend(labels)
@@ -182,4 +183,4 @@ if __name__ == "__main__":
 
     ReviewClassifier.save(model)
     new_model = ReviewClassifier.load()
-    test(new_model.to(device), test_loader, device)
+    test(new_model, test_loader, device)
