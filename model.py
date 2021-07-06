@@ -149,6 +149,7 @@ def test(model, test_loader, device):
     all_predictions = torch.tensor([])
     all_labels = []
 
+    model.to(device)
     model.eval()
     for (reviews, labels, review_sizes) in test_loader:
         all_labels.extend(labels)
