@@ -16,8 +16,6 @@ class ReviewClassifier(nn.Module):
         dropout=.2
     ):
         super().__init__()
-        if layers == 1:
-            dropout = 0
 
         self.dropout = nn.Dropout(p=dropout)
         self.sigmoid = nn.Sigmoid()
@@ -25,7 +23,7 @@ class ReviewClassifier(nn.Module):
         self.decode = nn.Linear(hidden_size, 1)
         self.recurrent = nn.LSTM(
             embedding_size, hidden_size, num_layers=layers, batch_first=True,
-            dropout=dropout
+            dropout=dropout if layers > 1 else 0
         )
         # TODO?: init_weights
 
