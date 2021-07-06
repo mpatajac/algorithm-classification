@@ -17,6 +17,16 @@ class ReviewClassifier(nn.Module):
     ):
         super().__init__()
 
+        # store model hyperparameters so they can be
+        # saved/loaded with the model itself
+        self._hyperparameters = {
+            "vocab_size": vocab_size,
+            "embedding_size": embedding_size,
+            "hidden_size": hidden_size,
+            "layers": layers,
+            "dropout": dropout
+        }
+
         self.dropout = nn.Dropout(p=dropout)
         self.sigmoid = nn.Sigmoid()
         self.encode = nn.Embedding(vocab_size, embedding_size)
@@ -44,14 +54,21 @@ class ReviewClassifier(nn.Module):
     @staticmethod
     def save(model, name="model"):
         model_state = deepcopy(model.state_dict())
-        torch.save(model_state, f"{name}.pt")
+        torch.save(
+            {
+                "state": model_state,
+                "hyperparameters": model._hyperparameters
+            },
+            f"{name}.pt"
+        )
 
     @staticmethod
-    def load(vocab_size, name="model"):
+    def load(name="model"):
         assert os.path.exists(f"{name}.pt")
 
-        model = ReviewClassifier(vocab_size)
-        model.load_state_dict(torch.load(f"{name}.pt"))
+        model_data = torch.load(f"{name}.pt")
+        model = ReviewClassifier(**model_data["hyperparameters"])
+        model.load_state_dict(model_data["state"])
         model.eval()
 
         return model
@@ -159,10 +176,10 @@ if __name__ == "__main__":
     train_loader = data_handler.get("train", cutoff=200)
     test_loader = data_handler.get("test", cutoff=20)
 
-    model = ReviewClassifier(data_handler.vocab_size, layers=1)
+    model = ReviewClassifier(data_handler.vocab_size, layers=2)
     train(model, train_loader, device=device, verbose=True)
     test(model, test_loader, device=device)
 
-    # ReviewClassifier.save(model)
-    # new_model = ReviewClassifier.load(data_handler.vocab_size)
-    # test(new_model.to(device), test_loader)
+    ReviewClassifier.save(model)
+    new_model = ReviewClassifier.load()
+    test(new_model.to(device), test_loader, device)
