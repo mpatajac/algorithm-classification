@@ -183,4 +183,4 @@ if __name__ == "__main__":
 
     ReviewClassifier.save(model)
     new_model = ReviewClassifier.load()
-    test(new_model.to(device), test_loader, device)
+    test(new_model, test_loader, device)
