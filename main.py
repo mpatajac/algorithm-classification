@@ -18,6 +18,7 @@ parser.add_argument("--hidden", type=int, default=200)
 parser.add_argument("--epochs", type=int, default=3)
 parser.add_argument("--save-name", type=str, default="model")
 parser.add_argument("-v", "--verbose", action="store_true")
+parser.add_argument("--force-load", action="store_true")
 
 args = parser.parse_args()
 
@@ -30,8 +31,12 @@ def main():
 
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-    train_loader = data_handler.get("train", cutoff=args.data_cutoff)
-    test_loader = data_handler.get("test", cutoff=args.data_cutoff)
+    train_loader = data_handler.get(
+        "train", force_load=args.force_load, cutoff=args.data_cutoff
+    )
+    test_loader = data_handler.get(
+        "test", force_load=args.force_load, cutoff=args.data_cutoff
+    )
 
     classifier = ReviewClassifier(
         data_handler.vocab_size,

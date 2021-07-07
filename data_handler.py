@@ -3,6 +3,7 @@ import utility
 import re
 import string
 import torch
+import pickle
 from num2words import num2words
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset, DataLoader
@@ -198,21 +199,43 @@ def to_loader(reviews):
 
 
 @utility.measure_time
-def get(mode, cutoff=25000):
+def get(mode, force_load=False, cutoff=25000):
+    global vocab_size
+
     assert mode in ["train", "test"]
     assert 1 <= cutoff <= 25000
 
-    # TODO?: save and load data(loader) to/from file
-    return utility.pipe(
-        {
-            "mode": mode,
-            "cutoff": cutoff
-        },
-        load,
-        clean,
-        index,
-        to_loader
-    )
+    # load data only if the full dataset is used
+    # and `--force-load` isn't used
+    if (
+        cutoff == 25000 and
+        os.path.exists(f"{mode}_data.pt") and
+        not force_load
+    ):
+        with open(f"{mode}_data.pt", "rb") as f:
+            stored_data = pickle.load(f)
+            reviews = stored_data["reviews"]
+            vocab_size = stored_data["vocab_size"]
+    else:
+        reviews = utility.pipe(
+            {
+                "mode": mode,
+                "cutoff": cutoff
+            },
+            load,
+            clean,
+            index
+        )
+
+        # save only when using full dataset
+        if cutoff == 25000:
+            with open(f"{mode}_data.pt", "wb") as f:
+                pickle.dump({
+                    "vocab_size": vocab_size,
+                    "reviews": reviews,
+                }, f, -1)
+
+    return to_loader(reviews)
 
 # -----------------------------------------------------------------------------
 

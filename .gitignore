@@ -10,3 +10,6 @@ __pycache__
 # the model is going to change very often,
 # so we are ignoring it (for now)
 model.pt
+
+# preprocessed data
+*_data.pt
