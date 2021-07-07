@@ -33,15 +33,15 @@ def main():
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     train_loader = data_handler.get(
-        "train", 
-        batch_size=args.batch_size, 
-        force_load=args.force_load, 
+        "train",
+        batch_size=args.batch_size,
+        force_load=args.force_load,
         cutoff=args.data_cutoff
     )
     test_loader = data_handler.get(
-        "test", 
+        "test",
         batch_size=args.batch_size,
-        force_load=args.force_load, 
+        force_load=args.force_load,
         cutoff=args.data_cutoff
     )
 
@@ -62,8 +62,7 @@ def main():
     )
 
     model.test(classifier, test_loader, device)
-
-    ReviewClassifier.save(classifier, args.save_name)
+    model.compare_to_saved(classifier, test_loader, device)
 
 
 if __name__ == "__main__":
