@@ -179,7 +179,7 @@ def _convert_to_tensor(reviews, labels):
 
 
 @utility.measure_time
-def to_loader(reviews):
+def to_loader(reviews, batch_size=64):
     labels = _create_labels(len(reviews))
     reviews, labels = _convert_to_tensor(reviews, labels)
     dataset = ReviewDataset(reviews, labels)
@@ -187,7 +187,7 @@ def to_loader(reviews):
     # TODO?: `batch_size` as a variable
     dataloader = DataLoader(
         dataset=dataset,
-        batch_size=64,
+        batch_size=batch_size,
         shuffle=True,
         collate_fn=pad_collate
     )
@@ -199,7 +199,7 @@ def to_loader(reviews):
 
 
 @utility.measure_time
-def get(mode, force_load=False, cutoff=25000):
+def get(mode, batch_size=64, force_load=False, cutoff=25000):
     global vocab_size
 
     assert mode in ["train", "test"]
@@ -235,7 +235,7 @@ def get(mode, force_load=False, cutoff=25000):
                     "reviews": reviews,
                 }, f, -1)
 
-    return to_loader(reviews)
+    return to_loader(reviews, batch_size)
 
 # -----------------------------------------------------------------------------
 
