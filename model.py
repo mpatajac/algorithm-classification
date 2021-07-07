@@ -149,7 +149,7 @@ def train(
 
 
 @utility.measure_time
-def test(model, test_loader, device):
+def test(model, test_loader, device, output=True):
     # TODO?: provide metrics as an argument
     from sklearn.metrics import accuracy_score
 
@@ -171,7 +171,9 @@ def test(model, test_loader, device):
     labels = _extract_labels(all_labels)
 
     accuracy = accuracy_score(labels, predictions)
-    print(f"Accuracy: {_format_percentage(accuracy)}")
+    if output:
+        print(f"Accuracy: {_format_percentage(accuracy)}")
+
     return accuracy
 
 
@@ -184,10 +186,12 @@ def compare_to_saved(model, test_loader, device, name="model"):
 
     if saved_exists:
         print("Comparing models...")
-        current_model_accuracy = test(model, test_loader, device)
+        current_model_accuracy = test(model, test_loader, device, output=False)
 
         saved_model = ReviewClassifier.load(name)
-        saved_model_accuracy = test(saved_model, test_loader, device)
+        saved_model_accuracy = test(
+            saved_model, test_loader, device, output=False
+        )
 
     if (not saved_exists) or (current_model_accuracy > saved_model_accuracy):
         if saved_exists:
