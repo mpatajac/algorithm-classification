@@ -62,7 +62,7 @@ def main():
     )
 
     model.test(classifier, test_loader, device)
-    model.compare_to_saved(classifier, test_loader, device)
+    model.compare_to_saved(classifier, test_loader, device, args.save_name)
 
 
 if __name__ == "__main__":
