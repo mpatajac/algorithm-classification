@@ -175,6 +175,30 @@ def test(model, test_loader, device):
     return accuracy
 
 
+def compare_to_saved(model, test_loader, device, name="model"):
+    """
+        Compare performance of a given model with the saved (best) one - 
+        the new one replaces it if it's better.
+    """
+    saved_exists = os.path.exists(f"{name}.pt")
+
+    if saved_exists:
+        print("Comparing models...")
+        current_model_accuracy = test(model, test_loader, device)
+
+        saved_model = ReviewClassifier.load(name)
+        saved_model_accuracy = test(saved_model, test_loader, device)
+
+    if (not saved_exists) or (current_model_accuracy > saved_model_accuracy):
+        if saved_exists:
+            message = f"New model has higher accuracy - {_format_percentage(current_model_accuracy)} compared to {_format_percentage(saved_model_accuracy)} of the old model. Saving new model to '{name}.pt' ."
+        else:
+            message = f"No model named '{name}.pt' was found - saving new model."
+
+        print(message)
+        ReviewClassifier.save(model, name)
+
+
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
     import data_handler
@@ -188,6 +212,8 @@ if __name__ == "__main__":
     train(model, train_loader, device=device, verbose=True)
     test(model, test_loader, device=device)
 
-    ReviewClassifier.save(model)
-    new_model = ReviewClassifier.load()
-    test(new_model, test_loader, device)
+    # ReviewClassifier.save(model)
+    # new_model = ReviewClassifier.load()
+    # test(new_model, test_loader, device)
+
+    compare_to_saved(model, test_loader, device, name="test_model")
