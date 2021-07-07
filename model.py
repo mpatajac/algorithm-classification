@@ -120,25 +120,32 @@ def train(
         model.parameters(), lr=1e-3, momentum=.9
     )
 
-    for epoch in range(epochs):
-        for (reviews, labels, review_sizes) in train_loader:
-            reviews = reviews.to(device)
-            labels = torch.tensor(labels, dtype=torch.float).to(device)
+    try:
+        for epoch in range(epochs):
+            for (reviews, labels, review_sizes) in train_loader:
+                reviews = reviews.to(device)
+                labels = torch.tensor(labels, dtype=torch.float).to(device)
 
-            predictions = model(reviews, review_sizes).reshape(-1)
-            loss = loss_fn(predictions, labels)
-            loss_values.append(loss.item())
+                predictions = model(reviews, review_sizes).reshape(-1)
+                loss = loss_fn(predictions, labels)
+                loss_values.append(loss.item())
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-        if verbose:
-            average_loss = sum(loss_values)/len(loss_values)
-            print(f"Epoch #{epoch + 1}: {average_loss}")
+            if verbose:
+                average_loss = sum(loss_values)/len(loss_values)
+                print(f"Epoch #{epoch + 1}: {average_loss}")
 
-    if graphic:
-        _plot_loss(loss_values)
+        if graphic:
+            _plot_loss(loss_values)
+
+    # enable early exit
+    except KeyboardInterrupt:
+        print(
+            f"Stopped training (during epoch {epoch + 1} of {epochs})."
+        )
 
 
 @utility.measure_time
