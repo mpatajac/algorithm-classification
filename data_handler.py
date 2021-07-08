@@ -184,7 +184,6 @@ def to_loader(reviews, batch_size=64):
     reviews, labels = _convert_to_tensor(reviews, labels)
     dataset = ReviewDataset(reviews, labels)
 
-    # TODO?: `batch_size` as a variable
     dataloader = DataLoader(
         dataset=dataset,
         batch_size=batch_size,

@@ -195,9 +195,13 @@ def compare_to_saved(model, test_loader, device, name="model"):
 
     if (not saved_exists) or (current_model_accuracy > saved_model_accuracy):
         if saved_exists:
-            message = f"New model has higher accuracy - {_format_percentage(current_model_accuracy)} compared to {_format_percentage(saved_model_accuracy)} of the old model. Saving new model to '{name}.pt' ."
+            message = f"New model has higher accuracy - \
+{_format_percentage(current_model_accuracy)} compared to \
+{_format_percentage(saved_model_accuracy)} of the old model. \
+Saving new model to '{name}.pt' ."
         else:
-            message = f"No model named '{name}.pt' was found - saving new model."
+            message = f"No model named '{name}.pt' was found - \
+saving new model."
 
         print(message)
         ReviewClassifier.save(model, name)
