@@ -17,6 +17,9 @@ class ReviewClassifier(nn.Module):
     ):
         super().__init__()
 
+        if layers == 1:
+            dropout = 0
+
         # store model hyperparameters so they can be
         # saved/loaded with the model itself
         self._hyperparameters = {
@@ -33,7 +36,7 @@ class ReviewClassifier(nn.Module):
         self.decode = nn.Linear(hidden_size, 1)
         self.recurrent = nn.LSTM(
             embedding_size, hidden_size, num_layers=layers, batch_first=True,
-            dropout=dropout if layers > 1 else 0
+            dropout=dropout
         )
         # TODO?: init_weights
 
