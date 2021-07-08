@@ -20,6 +20,7 @@ parser.add_argument("--epochs", type=int, default=3)
 parser.add_argument("--save-name", type=str, default="model")
 parser.add_argument("-v", "--verbose", action="store_true")
 parser.add_argument("--force-load", action="store_true")
+parser.add_argument("--bidirectional", action="store_true")
 
 args = parser.parse_args()
 
@@ -50,6 +51,7 @@ def main():
         embedding_size=args.embedded,
         hidden_size=args.hidden,
         layers=args.layers,
+        bidirectional=args.bidirectional,
         dropout=args.dropout
     )
 

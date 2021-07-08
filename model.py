@@ -13,6 +13,7 @@ class ReviewClassifier(nn.Module):
         embedding_size=100,
         hidden_size=200,
         layers=1,
+        bidirectional=False,
         dropout=.2
     ):
         super().__init__()
@@ -27,16 +28,20 @@ class ReviewClassifier(nn.Module):
             "embedding_size": embedding_size,
             "hidden_size": hidden_size,
             "layers": layers,
+            "bidirectional": bidirectional,
             "dropout": dropout
         }
+
+        # int(bidirectional) --> map {False, True} to {0, 1}
+        directions = 1 + int(bidirectional)
 
         self.dropout = nn.Dropout(p=dropout)
         self.sigmoid = nn.Sigmoid()
         self.encode = nn.Embedding(vocab_size, embedding_size)
-        self.decode = nn.Linear(hidden_size, 1)
+        self.decode = nn.Linear(directions * hidden_size, 1)
         self.recurrent = nn.LSTM(
             embedding_size, hidden_size, num_layers=layers, batch_first=True,
-            dropout=dropout
+            dropout=dropout, bidirectional=bidirectional
         )
         # TODO?: init_weights
 
@@ -47,8 +52,16 @@ class ReviewClassifier(nn.Module):
             encoded, input_lengths, batch_first=True, enforce_sorted=False
         )
         _, (state, _) = self.recurrent(packed)
+
         # take state from the last layer of LSTM
-        state = state[-1]
+        if self._hyperparameters["bidirectional"]:
+            # TODO: check if this is correct
+            state_1 = state[-1]
+            state_2 = state[-2]
+            state = torch.cat((state_1, state_2), dim=1)
+        else:
+            state = state[-1]
+
         state = self.dropout(state)
         decoded = self.decode(state)
         decoded = self.sigmoid(decoded)
@@ -219,7 +232,9 @@ if __name__ == "__main__":
     train_loader = data_handler.get("train", cutoff=200)
     test_loader = data_handler.get("test", cutoff=20)
 
-    model = ReviewClassifier(data_handler.vocab_size, layers=2)
+    model = ReviewClassifier(
+        data_handler.vocab_size, layers=2, bidirectional=True
+    )
     train(model, train_loader, device=device, verbose=True)
     test(model, test_loader, device=device)
 
