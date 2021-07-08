@@ -18,3 +18,35 @@ Tvoj zadatak je sljedeći:
 Kada riješiš ovaj zadatak, jednostavno ćeš ga "prenamijeniti" za klasifikaciju programskog koda umjesto rečenica.
 
 Ako imaš bilo kakvih pitanja, slobodno pitaj mene ili profesora. :)
+
+---
+## Nastavak zadatka
+
+U LSTM dodaj bidirectional parametar kako bi niz "obradio" u oba smjera i vidi hoće li se rezultati poboljšati.
+Za detalje vidi npr. Aggarwal, poglavlje 7.2.3, str. 283.
+
+Nakon enkoder sloja implementiraj attention sloj (vidi <https://towardsdatascience.com/attention-in-neural-networks-e66920838742>, soft attention) ili Aggarwal poglavlje 10.2.2, str. 425.
+
+S attention slojem želiš vidjeti koliko koje hidden stanje (ili ulazni token) utječe na završni rezultat.
+
+Rezultat attentiona možeš npr. zbrojiti s zadnjim hidden stanjem enkodera ili ga konkatenirati i dobiti vektor duplo veće dimenzije.
+
+---
+# Novi zadatak
+
+Nakon što poboljšaš ovaj jezični model, probaj isti model primijeniti za klasifikaciju programskog koda.
+
+Na <https://drive.google.com/file/d/0B2i-vWnOu7MxVlJwQXN6eVNONUU/> se nalazi dataset s 104 različita algoritma, po 500 implementacija za svaki algoritam. Svi programi su napisani u C++ jeziku. Jedan pristup klasifikaciji je prevesti program u LLVM IR reprezentaciju i promatrati program kao niz LLVM IR instrukcija, isto kao što je tekst niz riječi. LLVM IR možeš dobiti naredbom
+
+   clang -S -emit-llvm prog.cpp
+
+Pripremljene LLVM IR reprezentacije tih programa možeš preuzeti na <https://polybox.ethz.ch/index.php/s/JOBjrfmAjOeWCyl>. Ovdje je već napravljen train/validation/test split.
+
+Jedan problem je konstrukcija embeddinga za LLVM IR instrukcije. Naime, broj mogućih instrukcija je ogroman te ih je potrebno oblikovati na način da stanu u neki manji vokabular. Primjerice, uklanjanjem identifikatora ili nekih numeričkih vrijednosti smanjuje se broj mogućih instrukcija (iako je još uvijek ogroman).
+Zato predlažem da pročitaš i iskoristš skripte <https://github.com/spcl/ncc/blob/master/rgx_utils.py> i <https://github.com/spcl/ncc/blob/master/task_utils.py> te vokabular <https://polybox.ethz.ch/index.php/s/AWKd60qR63yViH8>.
+
+Ako imaš neku svoju ideju za obradu LLVM IR instrukcija, slobodno je probaj implementirati.
+
+Zasad ne moraš koristiti neke naučene embeddinge za ove instrukcije, nego vidjeti kakve će rezultate dati model ako uzmeš proizvoljne ili one-hot embeddinge.
+
+Trebaš konstruirati model sličan prethodnom, koji umjesto embeddinga za riječi prima embeddinge LLVM IR instrukcije i outputa jednu od 104 klase. Sretno!
