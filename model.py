@@ -67,7 +67,7 @@ class ReviewClassifier(nn.Module):
 
         self.dropout = nn.Dropout(p=dropout)
         self.sigmoid = nn.Sigmoid()
-        self.encode = nn.Embedding(vocab_size, embedding_size)
+        self.embedding = nn.Embedding(vocab_size, embedding_size)
         self.attention = Attention(directions * hidden_size)
         self.decode = nn.Linear(
             attention_multiplier * directions * hidden_size, 1
@@ -79,10 +79,10 @@ class ReviewClassifier(nn.Module):
         # TODO?: init_weights
 
     def forward(self, input, input_lengths):
-        encoded = self.encode(input)
-        encoded = self.dropout(encoded)
+        embedded = self.embedding(input)
+        embedded = self.dropout(embedded)
         packed = pack_padded_sequence(
-            encoded, input_lengths, batch_first=True, enforce_sorted=False
+            embedded, input_lengths, batch_first=True, enforce_sorted=False
         )
         output, (state, _) = self.recurrent(packed)
         output, _ = pad_packed_sequence(output, batch_first=True)
@@ -103,8 +103,8 @@ class ReviewClassifier(nn.Module):
             state = state + attention_output
 
         decoded = self.decode(state)
-        decoded = self.sigmoid(decoded)
-        return decoded
+        output = self.sigmoid(decoded)
+        return output
 
     @staticmethod
     def save(model, name="model"):
