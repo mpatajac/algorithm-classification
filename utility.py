@@ -1,6 +1,13 @@
 import time
 
 # -------------------------------------------------------
+# Base path to these files
+# Used to ease the adaption when not running localy
+# (e.g. on Google Colab)
+base_path = ""
+
+
+# -------------------------------------------------------
 # Time measuring utility (decorator)
 
 

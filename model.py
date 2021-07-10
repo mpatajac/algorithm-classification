@@ -1,6 +1,7 @@
 import torch
 import os
 import utility
+from utility import base_path
 from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence
 from copy import deepcopy
@@ -75,14 +76,14 @@ class ReviewClassifier(nn.Module):
                 "state": model_state,
                 "hyperparameters": model._hyperparameters
             },
-            f"{name}.pt"
+            f".{base_path}/{name}.pt"
         )
 
     @staticmethod
     def load(name="model"):
-        assert os.path.exists(f"{name}.pt")
+        assert os.path.exists(f".{base_path}/{name}.pt")
 
-        model_data = torch.load(f"{name}.pt")
+        model_data = torch.load(f".{base_path}/{name}.pt")
         model = ReviewClassifier(**model_data["hyperparameters"])
         model.load_state_dict(model_data["state"])
         model.eval()
@@ -198,7 +199,7 @@ def compare_to_saved(model, test_loader, device, name="model"):
         Compare performance of a given model with the saved (best) one - 
         the new one replaces it if it's better.
     """
-    saved_exists = os.path.exists(f"{name}.pt")
+    saved_exists = os.path.exists(f".{base_path}/{name}.pt")
 
     if saved_exists:
         print("Comparing models...")

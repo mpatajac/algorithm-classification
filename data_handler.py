@@ -4,6 +4,7 @@ import re
 import string
 import torch
 import pickle
+from utility import base_path
 from num2words import num2words
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset, DataLoader
@@ -19,12 +20,14 @@ def _read_files(mode, sentiment, cutoff):
     assert mode in ["train", "test"]
     assert sentiment in ["pos", "neg"]
 
-    data_path = f"./data/{mode}/{sentiment}"
+    data_path = f".{base_path}/data/{mode}/{sentiment}"
     file_names = os.listdir(data_path)[:cutoff]
 
     reviews = []
     for file_name in file_names:
-        with open(f"{data_path}/{file_name}", 'r', encoding="utf-8") as f:
+        with open(
+            f".{base_path}/{data_path}/{file_name}", 'r', encoding="utf-8"
+        ) as f:
             reviews.append(f.read())
 
     return reviews
@@ -105,7 +108,7 @@ def clean(reviews):
 def _build_dictionary():
     global vocab_size
 
-    with open("./data/imdb.vocab", "r", encoding="utf-8") as vocab:
+    with open(f".{base_path}/data/imdb.vocab", "r", encoding="utf-8") as vocab:
         # remove `\n` from the end of each word
         words = list(map(str.strip, vocab.readlines()))
 
@@ -208,10 +211,10 @@ def get(mode, batch_size=64, force_load=False, cutoff=25000):
     # and `--force-load` isn't used
     if (
         cutoff == 25000 and
-        os.path.exists(f"{mode}_data.pt") and
+        os.path.exists(f".{base_path}/{mode}_data.pt") and
         not force_load
     ):
-        with open(f"{mode}_data.pt", "rb") as f:
+        with open(f".{base_path}/{mode}_data.pt", "rb") as f:
             stored_data = pickle.load(f)
             reviews = stored_data["reviews"]
             vocab_size = stored_data["vocab_size"]
@@ -228,7 +231,7 @@ def get(mode, batch_size=64, force_load=False, cutoff=25000):
 
         # save only when using full dataset
         if cutoff == 25000:
-            with open(f"{mode}_data.pt", "wb") as f:
+            with open(f".{base_path}/{mode}_data.pt", "wb") as f:
                 pickle.dump({
                     "vocab_size": vocab_size,
                     "reviews": reviews,
