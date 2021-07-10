@@ -56,10 +56,7 @@ class ReviewClassifier(nn.Module):
 
         # take state from the last layer of LSTM
         if self._hyperparameters["bidirectional"]:
-            # TODO: check if this is correct
-            state_1 = state[-1]
-            state_2 = state[-2]
-            state = torch.cat((state_1, state_2), dim=1)
+            state = torch.cat((state[-1], state[-2]), dim=1)
         else:
             state = state[-1]
 
