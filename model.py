@@ -3,8 +3,32 @@ import os
 import utility
 from utility import base_path
 from torch import nn
-from torch.nn.utils.rnn import pack_padded_sequence
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from copy import deepcopy
+
+
+class Attention(nn.Module):
+    # https://github.com/chrisvdweth/ml-toolkit/blob/master/pytorch/models/text/classifier/rnn.py
+    def __init__(self, hidden_size):
+        super().__init__()
+        self.concat_linear = nn.Linear(2 * hidden_size, hidden_size)
+        self.alignment_function = nn.Linear(hidden_size, hidden_size)
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, recurrent_outputs, recurrent_hidden):
+        alignment_scores = self.alignment_function(recurrent_outputs)
+        alignment_scores = torch.bmm(
+            alignment_scores, recurrent_hidden.unsqueeze(2)
+        )
+        attention_weights = self.softmax(alignment_scores.squeeze(2))
+
+        context = torch.bmm(
+            recurrent_outputs.transpose(1, 2), attention_weights.unsqueeze(2)
+        ).squeeze(2)
+        attention_output = torch.cat((context, recurrent_hidden), dim=1)
+        attention_output = torch.tanh(self.concat_linear(attention_output))
+
+        return attention_output, attention_weights
 
 
 class ReviewClassifier(nn.Module):
@@ -15,9 +39,12 @@ class ReviewClassifier(nn.Module):
         hidden_size=200,
         layers=1,
         bidirectional=False,
-        dropout=.2
+        dropout=.2,
+        attention="cat"
     ):
         super().__init__()
+
+        assert attention in ["sum", "cat"]
 
         if layers == 1:
             dropout = 0
@@ -30,16 +57,21 @@ class ReviewClassifier(nn.Module):
             "hidden_size": hidden_size,
             "layers": layers,
             "bidirectional": bidirectional,
-            "dropout": dropout
+            "dropout": dropout,
+            "attention": attention
         }
 
-        # int(bidirectional) --> map {False, True} to {0, 1}
+        # int(b: bool) --> map {False, True} to {0, 1}
         directions = 1 + int(bidirectional)
+        attention_multiplier = 1 + int(attention == "cat")
 
         self.dropout = nn.Dropout(p=dropout)
         self.sigmoid = nn.Sigmoid()
         self.encode = nn.Embedding(vocab_size, embedding_size)
-        self.decode = nn.Linear(directions * hidden_size, 1)
+        self.attention = Attention(directions * hidden_size)
+        self.decode = nn.Linear(
+            attention_multiplier * directions * hidden_size, 1
+        )
         self.recurrent = nn.LSTM(
             embedding_size, hidden_size, num_layers=layers, batch_first=True,
             dropout=dropout, bidirectional=bidirectional
@@ -52,15 +84,24 @@ class ReviewClassifier(nn.Module):
         packed = pack_padded_sequence(
             encoded, input_lengths, batch_first=True, enforce_sorted=False
         )
-        _, (state, _) = self.recurrent(packed)
+        output, (state, _) = self.recurrent(packed)
+        output, _ = pad_packed_sequence(output, batch_first=True)
 
         # take state from the last layer of LSTM
         if self._hyperparameters["bidirectional"]:
             state = torch.cat((state[-1], state[-2]), dim=1)
         else:
             state = state[-1]
-
         state = self.dropout(state)
+
+        # TODO?: use `attention_weights` for visualization
+        attention_output, _ = self.attention(output, state)
+
+        if self._hyperparameters["attention"] == "cat":
+            state = torch.cat((state, attention_output), dim=1)
+        else:
+            state = state + attention_output
+
         decoded = self.decode(state)
         decoded = self.sigmoid(decoded)
         return decoded

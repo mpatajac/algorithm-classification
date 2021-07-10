@@ -18,6 +18,9 @@ parser.add_argument("--hidden", type=int, default=200)
 parser.add_argument("--batch-size", type=int, default=64)
 parser.add_argument("--epochs", type=int, default=3)
 parser.add_argument("--save-name", type=str, default="model")
+parser.add_argument(
+    "--attention", type=str, choices=["sum", "cat"], default="cat"
+)
 parser.add_argument("-v", "--verbose", action="store_true")
 parser.add_argument("--force-load", action="store_true")
 parser.add_argument("--bidirectional", action="store_true")
@@ -52,7 +55,8 @@ def main():
         hidden_size=args.hidden,
         layers=args.layers,
         bidirectional=args.bidirectional,
-        dropout=args.dropout
+        dropout=args.dropout,
+        attention=args.attention
     )
 
     model.train(
