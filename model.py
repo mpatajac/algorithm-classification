@@ -166,7 +166,6 @@ def train(
     verbose=False,
     graphic=False
 ):
-    loss_values = []
     loss_fn = nn.BCELoss()
 
     model.to(device)
@@ -175,6 +174,8 @@ def train(
 
     try:
         for epoch in range(epochs):
+            loss_values = []
+
             for (reviews, labels, review_sizes) in train_loader:
                 reviews = reviews.to(device)
                 labels = torch.tensor(labels, dtype=torch.float).to(device)
@@ -191,8 +192,8 @@ def train(
                 average_loss = sum(loss_values)/len(loss_values)
                 print(f"Epoch #{epoch + 1}: {average_loss}")
 
-        if graphic:
-            _plot_loss(loss_values)
+            if graphic:
+                _plot_loss(loss_values)
 
     # enable early exit
     except KeyboardInterrupt:
