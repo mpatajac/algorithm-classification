@@ -171,9 +171,7 @@ def train(
 
     model.to(device)
     model.train()
-    optimizer = torch.optim.RMSprop(
-        model.parameters(), lr=1e-3, momentum=.9
-    )
+    optimizer = torch.optim.Adam(model.parameters())
 
     try:
         for epoch in range(epochs):
