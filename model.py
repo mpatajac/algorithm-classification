@@ -31,7 +31,7 @@ class Attention(nn.Module):
         return attention_output, attention_weights
 
 
-class ReviewClassifier(nn.Module):
+class AlgorithmClassifier(nn.Module):
     def __init__(
         self,
         vocab_size,
@@ -122,7 +122,7 @@ class ReviewClassifier(nn.Module):
         assert os.path.exists(f".{base_path}/{name}.pt")
 
         model_data = torch.load(f".{base_path}/{name}.pt")
-        model = ReviewClassifier(**model_data["hyperparameters"])
+        model = AlgorithmClassifier(**model_data["hyperparameters"])
         model.load_state_dict(model_data["state"])
         model.eval()
 
@@ -142,8 +142,8 @@ def _format_percentage(value, precision=2):
     return f"{round(value * 100, precision)}%"
 
 
-def _extract_labels(labels):
-    return [label.item() for label in labels]
+def _extract_categories(categories):
+    return [category.item() for category in categories]
 
 
 def _extract_predictions(predictions, classify=round):
@@ -176,12 +176,14 @@ def train(
         for epoch in range(epochs):
             loss_values = []
 
-            for (reviews, labels, review_sizes) in train_loader:
-                reviews = reviews.to(device)
-                labels = torch.tensor(labels, dtype=torch.float).to(device)
+            for (algorithms, categories, algorithm_sizes) in train_loader:
+                algorithms = algorithms.to(device)
+                categories = torch.tensor(
+                    categories, dtype=torch.float
+                ).to(device)
 
-                predictions = model(reviews, review_sizes).reshape(-1)
-                loss = loss_fn(predictions, labels)
+                predictions = model(algorithms, algorithm_sizes).reshape(-1)
+                loss = loss_fn(predictions, categories)
                 loss_values.append(loss.item())
 
                 optimizer.zero_grad()
@@ -208,23 +210,23 @@ def test(model, test_loader, device, output=True):
     from sklearn.metrics import accuracy_score
 
     all_predictions = torch.tensor([])
-    all_labels = []
+    all_categories = []
 
     model.to(device)
     model.eval()
-    for (reviews, labels, review_sizes) in test_loader:
-        all_labels.extend(labels)
+    for (algorithms, categories, algorithm_sizes) in test_loader:
+        all_categories.extend(categories)
 
-        reviews = reviews.to(device)
-        predictions = model(reviews, review_sizes).reshape(-1)
+        algorithms = algorithms.to(device)
+        predictions = model(algorithms, algorithm_sizes).reshape(-1)
         all_predictions = torch.cat((
             all_predictions, predictions.cpu().detach()
         ))
 
     predictions = _extract_predictions(all_predictions)
-    labels = _extract_labels(all_labels)
+    categories = _extract_categories(all_categories)
 
-    accuracy = accuracy_score(labels, predictions)
+    accuracy = accuracy_score(categories, predictions)
     if output:
         print(f"Accuracy: {_format_percentage(accuracy)}")
 
@@ -242,7 +244,7 @@ def compare_to_saved(model, test_loader, device, name="model"):
         print("Comparing models...")
         current_model_accuracy = test(model, test_loader, device, output=False)
 
-        saved_model = ReviewClassifier.load(name)
+        saved_model = AlgorithmClassifier.load(name)
         saved_model_accuracy = test(
             saved_model, test_loader, device, output=False
         )
@@ -258,7 +260,7 @@ Saving new model to '{name}.pt' ."
 saving new model."
 
         print(message)
-        ReviewClassifier.save(model, name)
+        AlgorithmClassifier.save(model, name)
 
 
 # -----------------------------------------------------------------------------
@@ -267,10 +269,10 @@ if __name__ == "__main__":
 
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-    train_loader = data_handler.get("train", cutoff=200)
-    test_loader = data_handler.get("test", cutoff=20)
+    train_loader = data_handler.get("train")
+    test_loader = data_handler.get("test")
 
-    model = ReviewClassifier(
+    model = AlgorithmClassifier(
         data_handler.vocab_size, layers=2, bidirectional=True
     )
     train(model, train_loader, device=device, verbose=True)

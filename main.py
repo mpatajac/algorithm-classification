@@ -4,13 +4,12 @@ import torch
 import utility
 import data_handler
 import model
-from model import ReviewClassifier
+from model import AlgorithmClassifier
 
 # -----------------------------------------------------------------------------
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--data-cutoff", type=int, default=25000)
 parser.add_argument("--dropout", type=float, default=.2)
 parser.add_argument("--layers", type=int, default=1)
 parser.add_argument("--embedded", type=int, default=100)
@@ -22,7 +21,6 @@ parser.add_argument(
     "--attention", type=str, choices=["sum", "cat"], default="cat"
 )
 parser.add_argument("-v", "--verbose", action="store_true")
-parser.add_argument("--force-load", action="store_true")
 parser.add_argument("--bidirectional", action="store_true")
 
 args = parser.parse_args()
@@ -36,20 +34,10 @@ def main():
 
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-    train_loader = data_handler.get(
-        "train",
-        batch_size=args.batch_size,
-        force_load=args.force_load,
-        cutoff=args.data_cutoff
-    )
-    test_loader = data_handler.get(
-        "test",
-        batch_size=args.batch_size,
-        force_load=args.force_load,
-        cutoff=args.data_cutoff
-    )
+    train_loader = data_handler.get("train", batch_size=args.batch_size)
+    test_loader = data_handler.get("test", batch_size=args.batch_size)
 
-    classifier = ReviewClassifier(
+    classifier = AlgorithmClassifier(
         data_handler.vocab_size,
         embedding_size=args.embedded,
         hidden_size=args.hidden,
