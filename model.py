@@ -4,6 +4,7 @@ import utility
 from utility import base_path
 from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+from torch.nn.functional import softmax
 from copy import deepcopy
 
 
@@ -35,6 +36,7 @@ class AlgorithmClassifier(nn.Module):
     def __init__(
         self,
         vocab_size,
+        categories=104,
         embedding_size=100,
         hidden_size=200,
         layers=1,
@@ -53,6 +55,7 @@ class AlgorithmClassifier(nn.Module):
         # saved/loaded with the model itself
         self._hyperparameters = {
             "vocab_size": vocab_size,
+            "categories": categories,
             "embedding_size": embedding_size,
             "hidden_size": hidden_size,
             "layers": layers,
@@ -66,11 +69,12 @@ class AlgorithmClassifier(nn.Module):
         attention_multiplier = 1 + int(attention == "cat")
 
         self.dropout = nn.Dropout(p=dropout)
-        self.sigmoid = nn.Sigmoid()
         self.embedding = nn.Embedding(vocab_size, embedding_size)
         self.attention = Attention(directions * hidden_size)
+
+        # TODO?: Linear(h:32?) + ReLU + Linear(32?:categories)
         self.decode = nn.Linear(
-            attention_multiplier * directions * hidden_size, 1
+            attention_multiplier * directions * hidden_size, categories
         )
         self.recurrent = nn.LSTM(
             embedding_size, hidden_size, num_layers=layers, batch_first=True,
@@ -103,8 +107,7 @@ class AlgorithmClassifier(nn.Module):
             state = state + attention_output
 
         decoded = self.decode(state)
-        output = self.sigmoid(decoded)
-        return output
+        return decoded
 
     @staticmethod
     def save(model, name="model"):
@@ -146,15 +149,14 @@ def _extract_categories(categories):
     return [category.item() for category in categories]
 
 
-def _extract_predictions(predictions, classify=round):
-    """
-        Argument `classify` determines how to map
-        predictions given by the model (in range [0, 1])
-        to a binary set of labels ({0, 1}).
+def _extract_predictions(outputs):
+    outputs = softmax(outputs, dim=1)
 
-        By default, rounding is used ([0, .5] -> 0, (.5, 1] -> 1)
-    """
-    return [classify(prediction.item()) for prediction in predictions]
+    predictions = outputs.max(dim=1)
+    predicted_categories = predictions.indices
+    prediction_confidence = predictions.values
+
+    return predicted_categories, prediction_confidence
 
 
 @utility.measure_time
@@ -166,23 +168,22 @@ def train(
     verbose=False,
     graphic=False
 ):
-    loss_fn = nn.BCELoss()
+    loss_fn = nn.CrossEntropyLoss()
 
     model.to(device)
     model.train()
     optimizer = torch.optim.Adam(model.parameters())
 
+    # TODO?: X-validation
     try:
         for epoch in range(epochs):
             loss_values = []
 
             for (algorithms, categories, algorithm_sizes) in train_loader:
                 algorithms = algorithms.to(device)
-                categories = torch.tensor(
-                    categories, dtype=torch.float
-                ).to(device)
+                categories = torch.tensor(categories).to(device)
 
-                predictions = model(algorithms, algorithm_sizes).reshape(-1)
+                predictions = model(algorithms, algorithm_sizes)
                 loss = loss_fn(predictions, categories)
                 loss_values.append(loss.item())
 
@@ -218,17 +219,21 @@ def test(model, test_loader, device, output=True):
         all_categories.extend(categories)
 
         algorithms = algorithms.to(device)
-        predictions = model(algorithms, algorithm_sizes).reshape(-1)
+        predictions = model(algorithms, algorithm_sizes)
         all_predictions = torch.cat((
             all_predictions, predictions.cpu().detach()
         ))
 
-    predictions = _extract_predictions(all_predictions)
+    # TODO?: visualize confidence
+    predictions, confidence = _extract_predictions(all_predictions)
     categories = _extract_categories(all_categories)
 
     accuracy = accuracy_score(categories, predictions)
     if output:
         print(f"Accuracy: {_format_percentage(accuracy)}")
+
+        average_confidence = (sum(confidence) / len(confidence)).item()
+        print(f"Average confidence: {_format_percentage(average_confidence)}")
 
     return accuracy
 
@@ -269,17 +274,15 @@ if __name__ == "__main__":
 
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-    train_loader = data_handler.get("train")
+    train_loader = data_handler.get("val")
     test_loader = data_handler.get("test")
 
-    model = AlgorithmClassifier(
-        data_handler.vocab_size, layers=2, bidirectional=True
-    )
-    train(model, train_loader, device=device, verbose=True)
+    model = AlgorithmClassifier(data_handler.vocab_size)
+    train(model, train_loader, device=device, epochs=1, verbose=True)
     test(model, test_loader, device=device)
 
     # ReviewClassifier.save(model)
     # new_model = ReviewClassifier.load()
     # test(new_model, test_loader, device)
 
-    compare_to_saved(model, test_loader, device, name="test_model")
+    # compare_to_saved(model, test_loader, device, name="tenst_model")
