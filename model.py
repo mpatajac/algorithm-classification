@@ -114,14 +114,14 @@ class AlgorithmClassifier(nn.Module):
                 "state": model_state,
                 "hyperparameters": model._hyperparameters
             },
-            f".{base_path}/{name}.pt"
+            f".{base_path}/models/{name}.pt"
         )
 
     @staticmethod
     def load(name="model"):
-        assert os.path.exists(f".{base_path}/{name}.pt")
+        assert os.path.exists(f".{base_path}/models/{name}.pt")
 
-        model_data = torch.load(f".{base_path}/{name}.pt")
+        model_data = torch.load(f".{base_path}/models/{name}.pt")
         model = AlgorithmClassifier(**model_data["hyperparameters"])
         model.load_state_dict(model_data["state"])
         model.eval()
@@ -238,7 +238,7 @@ def compare_to_saved(model, test_loader, device, name="model"):
         Compare performance of a given model with the saved (best) one - 
         the new one replaces it if it's better.
     """
-    saved_exists = os.path.exists(f".{base_path}/{name}.pt")
+    saved_exists = os.path.exists(f".{base_path}/models/{name}.pt")
 
     if saved_exists:
         print("Comparing models...")
