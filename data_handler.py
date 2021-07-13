@@ -1,148 +1,51 @@
 import os
 import utility
-import re
-import string
 import torch
 import pickle
-from utility import base_path
-from num2words import num2words
+from itertools import chain
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset, DataLoader
 
 # -----------------------------------------------------------------------------
 # globals
-vocab_size = 0
+vocab_size = 8566
 
 # -----------------------------------------------------------------------------
-
-
-def _read_files(mode, sentiment, cutoff):
-    assert mode in ["train", "test"]
-    assert sentiment in ["pos", "neg"]
-
-    data_path = f".{base_path}/data/{mode}/{sentiment}"
-    file_names = os.listdir(data_path)[:cutoff]
-
-    reviews = []
-    for file_name in file_names:
-        with open(
-            f".{base_path}/{data_path}/{file_name}", 'r', encoding="utf-8"
-        ) as f:
-            reviews.append(f.read())
-
-    return reviews
 
 
 @utility.measure_time
-def load(kwargs):
-    """
-            Load reviews into a list.
-            First half of the list are positive reviews,
-            and the second are the negative ones.
+def prepare(set):
+    assert set in ["train", "test", "val"], "Invalid data set."
+    assert os.path.exists(f"./data/seq_{set}"), \
+        f"Can't find 'seq_{set}', please create it using `task_utils.llvm_ir_to_trainable(set)`."
 
-            `kwargs`:
-            mode:	"train"  |  "test"
-            cutoff:	[1, 25k] |  None
-    """
+    all_indices = []
+    category_count = []
+    root_directory_name = f"./data/seq_{set}"
 
-    assert "mode" in kwargs.keys(), "Expected keyword argument `mode`."
-    assert kwargs["mode"] in [
-        "train", "test"], f"Invalid mode: expected \"train\" or \"test\", got \"{kwargs['mode']}\"."
+    # collect
+    directories = os.listdir(root_directory_name)
+    for directory in directories:
+        files = os.listdir(f"{root_directory_name}/{directory}")
+        files_in_category = len(files)
+        category_count.append(files_in_category)
+        for file in files:
+            with open(f"{root_directory_name}/{directory}/{file}", 'r') as f:
+                indices = [int(line.strip()) for line in f.readlines()]
+                all_indices.append(indices)
 
-    mode = kwargs["mode"]
-    cutoff = int(kwargs["cutoff"]) if "cutoff" in kwargs.keys() else 25000
-
-    print(f"Preparing {2 * cutoff} reviews from the {mode} set...")
-    return _read_files(mode, "pos", cutoff) + _read_files(mode, "neg", cutoff)
-
-# -----------------------------------------------------------------------------
-
-
-def _remove_br(review):
-    # pretty sure there are always two `br`s in a row
-    # but removing them individually, just in case
-    return re.sub("<br />", " ", review)
-
-
-def _remove_puctuation(review):
-    # we want to remove all punctuation
-    # except for dashes and apostrophes
-    characters_to_remove = re.sub("-|'", "", string.punctuation)
-    return re.sub(f"[{characters_to_remove}]", "", review)
-
-
-def _collapse_spaces(review):
-    # replace multiple successive whitespace characters
-    # with a single space
-    return re.sub("\s+", " ", review)
-
-
-def _lower_text(review):
-    return review.lower()
-
-
-def _map_numbers(review):
-    # replace all numbers with their word representations
-    return re.sub("\d+", lambda n: num2words(n.group(0)), review)
-
-
-def _split_words(review):
-    return review.split()
-
-
-@utility.measure_time
-def clean(reviews):
-    return list(utility.pipe_map(
-        reviews,
-        _remove_br,
-        _remove_puctuation,
-        _collapse_spaces,
-        _lower_text,
-        _map_numbers,
-        _split_words,
-    ))
+    # save
+    with open(f"./data/{set}_data.pt", "wb") as f:
+        pickle.dump({
+            "indices": all_indices,
+            "category_count": category_count
+        }, f, -1)
 
 
 # -----------------------------------------------------------------------------
 
-def _build_dictionary():
-    global vocab_size
 
-    with open(f".{base_path}/data/imdb.vocab", "r", encoding="utf-8") as vocab:
-        # remove `\n` from the end of each word
-        words = list(map(str.strip, vocab.readlines()))
-
-        # assign `<pad>` to index 0 (to use 0 as pad value)
-        i2w = ['<pad>'] + words + ['<unk>']
-        vocab_size = len(i2w)
-
-        w2i = {word: idx for (idx, word) in enumerate(i2w)}
-
-    return w2i
-
-
-def _map_to_indices(reviews, word_mapping):
-    return list(map(
-        lambda review: list(map(
-            lambda word:
-                word_mapping[
-                    word if word in word_mapping.keys() else "<unk>"
-                ], review
-        )), reviews
-    ))
-
-
-@utility.measure_time
-def index(reviews):
-    # since we are doing sequence classification,
-    # we only need word-to-index mapping
-    word_mapping = _build_dictionary()
-    return _map_to_indices(reviews, word_mapping)
-
-# -----------------------------------------------------------------------------
-
-
-class ReviewDataset(Dataset):
+class AlgorithmDataset(Dataset):
     def __init__(self, X, y):
         super().__init__()
         self.X = X
@@ -156,36 +59,39 @@ class ReviewDataset(Dataset):
 
 
 def pad_collate(batch):
-    (reviews, sentiments) = zip(*batch)
+    (algorithms, categories) = zip(*batch)
 
     # get original lengths for packing
-    review_lengths = [len(review) for review in reviews]
+    algorithm_lengths = [len(algorithm) for algorithm in algorithms]
 
     # pad sequences to longest in batch
-    # TODO?: set `padding_value` to `w2i["<pad>"]`
-    padded_reviews = pad_sequence(reviews, batch_first=True, padding_value=0)
+    padded_algorithms = pad_sequence(
+        algorithms, batch_first=True, padding_value=0
+    )
 
-    return padded_reviews, sentiments, review_lengths
-
-
-def _create_labels(review_count):
-    # first half of the reviews are positive, other half is negative
-    per_category = review_count // 2
-    return [1 for _ in range(per_category)] + [0 for _ in range(per_category)]
+    return padded_algorithms, categories, algorithm_lengths
 
 
-def _convert_to_tensor(reviews, labels):
-    reviews = [torch.tensor(review) for review in reviews]
-    labels = torch.tensor(labels)
+def _create_categories(category_count):
+    nested_categories = [
+        [category for _ in range(count)]
+        for (category, count) in enumerate(category_count)
+    ]
+    # flatten the nested categories
+    return list(chain.from_iterable(nested_categories))
 
-    return reviews, labels
+
+def _convert_to_tensor(algorithms, categories):
+    algorithms = [torch.tensor(algorithm) for algorithm in algorithms]
+    categories = torch.tensor(categories)
+
+    return algorithms, categories
 
 
-@utility.measure_time
-def to_loader(reviews, batch_size=64):
-    labels = _create_labels(len(reviews))
-    reviews, labels = _convert_to_tensor(reviews, labels)
-    dataset = ReviewDataset(reviews, labels)
+def to_loader(algorithms, category_count, batch_size=64):
+    categories = _create_categories(category_count)
+    algorithms, categories = _convert_to_tensor(algorithms, categories)
+    dataset = AlgorithmDataset(algorithms, categories)
 
     dataloader = DataLoader(
         dataset=dataset,
@@ -197,51 +103,26 @@ def to_loader(reviews, batch_size=64):
     return dataloader
 
 
-# -----------------------------------------------------------------------------
-
-
 @utility.measure_time
-def get(mode, batch_size=64, force_load=False, cutoff=25000):
-    global vocab_size
+def get(set, batch_size=64):
+    assert set in ["train", "test", "val"]
+    assert os.path.exists(f"./data/{set}_data.pt"), \
+        f"Can't find '{set}_data.pt', please prepare it using function `prepare(set)`."
 
-    assert mode in ["train", "test"]
-    assert 1 <= cutoff <= 25000
+    with open(f"./data/{set}_data.pt", "rb") as f:
+        stored_data = pickle.load(f)
+        indices = stored_data["indices"]
+        category_count = stored_data["category_count"]
 
-    # load data only if the full dataset is used
-    # and `--force-load` isn't used
-    if (
-        cutoff == 25000 and
-        os.path.exists(f".{base_path}/{mode}_data.pt") and
-        not force_load
-    ):
-        with open(f".{base_path}/{mode}_data.pt", "rb") as f:
-            stored_data = pickle.load(f)
-            reviews = stored_data["reviews"]
-            vocab_size = stored_data["vocab_size"]
-    else:
-        reviews = utility.pipe(
-            {
-                "mode": mode,
-                "cutoff": cutoff
-            },
-            load,
-            clean,
-            index
-        )
-
-        # save only when using full dataset
-        if cutoff == 25000:
-            with open(f".{base_path}/{mode}_data.pt", "wb") as f:
-                pickle.dump({
-                    "vocab_size": vocab_size,
-                    "reviews": reviews,
-                }, f, -1)
-
-    return to_loader(reviews, batch_size)
+    return to_loader(indices, category_count, batch_size)
 
 # -----------------------------------------------------------------------------
 
 
 if __name__ == "__main__":
-    # loader = get(mode="train")
-    loader = get(mode="train", cutoff=2)
+    # prepare("test")
+    loader = get("test")
+    for batch in loader:
+        indices, categories, _ = batch
+        print(indices[0], categories[0])
+        break
