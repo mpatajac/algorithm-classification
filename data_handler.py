@@ -2,6 +2,7 @@ import os
 import utility
 import torch
 import pickle
+from utility import base_path
 from itertools import chain
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset, DataLoader
@@ -16,12 +17,12 @@ vocab_size = 8566
 @utility.measure_time
 def prepare(set):
     assert set in ["train", "test", "val"], "Invalid data set."
-    assert os.path.exists(f"./data/seq_{set}"), \
+    assert os.path.exists(f".{base_path}/data/seq_{set}"), \
         f"Can't find 'seq_{set}', please create it using `task_utils.llvm_ir_to_trainable(set)`."
 
     all_indices = []
     category_count = []
-    root_directory_name = f"./data/seq_{set}"
+    root_directory_name = f".{base_path}/data/seq_{set}"
 
     # collect
     directories = os.listdir(root_directory_name)
@@ -35,7 +36,7 @@ def prepare(set):
                 all_indices.append(indices)
 
     # save
-    with open(f"./data/{set}_data.pt", "wb") as f:
+    with open(f".{base_path}/data/{set}_data.pt", "wb") as f:
         pickle.dump({
             "indices": all_indices,
             "category_count": category_count
@@ -106,10 +107,10 @@ def to_loader(algorithms, category_count, batch_size=64):
 @utility.measure_time
 def get(set, batch_size=64):
     assert set in ["train", "test", "val"]
-    assert os.path.exists(f"./data/{set}_data.pt"), \
+    assert os.path.exists(f".{base_path}/data/{set}_data.pt"), \
         f"Can't find '{set}_data.pt', please prepare it using function `prepare(set)`."
 
-    with open(f"./data/{set}_data.pt", "rb") as f:
+    with open(f".{base_path}/data/{set}_data.pt", "rb") as f:
         stored_data = pickle.load(f)
         indices = stored_data["indices"]
         category_count = stored_data["category_count"]
