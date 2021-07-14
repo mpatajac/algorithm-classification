@@ -35,6 +35,7 @@ def main():
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     train_loader = data_handler.get("train", batch_size=args.batch_size)
+    validation_loader = data_handler.get("val", batch_size=args.batch_size)
     test_loader = data_handler.get("test", batch_size=args.batch_size)
 
     classifier = AlgorithmClassifier(
@@ -50,13 +51,14 @@ def main():
     model.train(
         classifier,
         train_loader,
+        validation_loader=validation_loader,
         device=device,
         epochs=args.epochs,
+        save_name=args.save_name,
         verbose=args.verbose
     )
 
     model.test(classifier, test_loader, device)
-    model.compare_to_saved(classifier, test_loader, device, args.save_name)
 
 
 if __name__ == "__main__":

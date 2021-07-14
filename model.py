@@ -163,21 +163,22 @@ def _extract_predictions(outputs):
 def train(
     model,
     train_loader,
+    validation_loader=None,
     epochs=2,
     device="cpu",
+    save_name="model",
     verbose=False,
     graphic=False
 ):
     loss_fn = nn.CrossEntropyLoss()
 
     model.to(device)
-    model.train()
     optimizer = torch.optim.Adam(model.parameters())
 
-    # TODO?: X-validation
     try:
         for epoch in range(epochs):
             loss_values = []
+            model.train()
 
             for (algorithms, categories, algorithm_sizes) in train_loader:
                 algorithms = algorithms.to(device)
@@ -193,10 +194,13 @@ def train(
 
             if verbose:
                 average_loss = sum(loss_values)/len(loss_values)
-                print(f"Epoch #{epoch + 1}: {average_loss}")
+                print(f"\nEpoch #{epoch + 1}: {average_loss}")
 
             if graphic:
                 _plot_loss(loss_values)
+
+            if validation_loader is not None:
+                compare_to_saved(model, validation_loader, device, save_name)
 
     # enable early exit
     except KeyboardInterrupt:
