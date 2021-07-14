@@ -22,10 +22,19 @@ parser.add_argument(
 )
 parser.add_argument("-v", "--verbose", action="store_true")
 parser.add_argument("--bidirectional", action="store_true")
+parser.add_argument("--evaluate", action="store_true")
 
 args = parser.parse_args()
 
 # -----------------------------------------------------------------------------
+
+
+@utility.measure_time
+def evaluate(name="model", set="test"):
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    test_loader = data_handler.get(set)
+    classifier = AlgorithmClassifier.load(name)
+    model.test(classifier, test_loader, device)
 
 
 @utility.measure_time
@@ -62,4 +71,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if args.evaluate:
+        evaluate(name=args.save_name)
+    else:
+        main()
