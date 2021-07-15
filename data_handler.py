@@ -20,7 +20,7 @@ def prepare(set):
     assert os.path.exists(f".{base_path}/data/seq_{set}"), \
         f"Can't find 'seq_{set}', please create it using `task_utils.llvm_ir_to_trainable(set)`."
 
-    all_indices = []
+    all_indices = [[] for _ in range(104)]
     category_count = [0 for _ in range(104)]
     root_directory_name = f".{base_path}/data/seq_{set}"
 
@@ -29,13 +29,21 @@ def prepare(set):
     for directory in directories:
         # use 0-index
         category = int(directory) - 1
+
         files = os.listdir(f"{root_directory_name}/{directory}")
         files_in_category = len(files)
         category_count[category] = files_in_category
+
+        directory_indices = []
         for file in files:
             with open(f"{root_directory_name}/{directory}/{file}", 'r') as f:
                 indices = [int(line.strip()) for line in f.readlines()]
-                all_indices.append(indices)
+                directory_indices.append(indices)
+
+        all_indices[category] = directory_indices
+
+    # flatten
+    all_indices = list(chain.from_iterable(all_indices))
 
     # save
     with open(f".{base_path}/data/{set}_data.pt", "wb") as f:
