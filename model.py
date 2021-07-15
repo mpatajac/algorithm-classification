@@ -111,6 +111,9 @@ class AlgorithmClassifier(nn.Module):
 
     @staticmethod
     def save(model, name="model"):
+        if not os.path.exists(f".{base_path}/models"):
+            os.mkdir(f".{base_path}/models")
+
         model_state = deepcopy(model.state_dict())
         torch.save(
             {
