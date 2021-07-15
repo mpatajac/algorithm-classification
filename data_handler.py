@@ -21,15 +21,17 @@ def prepare(set):
         f"Can't find 'seq_{set}', please create it using `task_utils.llvm_ir_to_trainable(set)`."
 
     all_indices = []
-    category_count = []
+    category_count = [0 for _ in range(104)]
     root_directory_name = f".{base_path}/data/seq_{set}"
 
     # collect
     directories = os.listdir(root_directory_name)
     for directory in directories:
+        # use 0-index
+        category = int(directory) - 1
         files = os.listdir(f"{root_directory_name}/{directory}")
         files_in_category = len(files)
-        category_count.append(files_in_category)
+        category_count[category] = files_in_category
         for file in files:
             with open(f"{root_directory_name}/{directory}/{file}", 'r') as f:
                 indices = [int(line.strip()) for line in f.readlines()]
@@ -121,9 +123,9 @@ def get(set, batch_size=64):
 
 
 if __name__ == "__main__":
-    # prepare("test")
-    loader = get("test")
-    for batch in loader:
-        indices, categories, _ = batch
-        print(indices[0], categories[0])
-        break
+    prepare("test")
+    # loader = get("test")
+    # for batch in loader:
+    #     indices, categories, _ = batch
+    #     print(indices[0], categories[0])
+    #     break
