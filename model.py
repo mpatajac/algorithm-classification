@@ -89,7 +89,9 @@ class AlgorithmClassifier(nn.Module):
             embedded, input_lengths, batch_first=True, enforce_sorted=False
         )
         output, (state, _) = self.recurrent(packed)
-        output, _ = pad_packed_sequence(output, batch_first=True)
+        output, _ = pad_packed_sequence(
+            output, batch_first=True, padding_value=0
+        )
 
         # take state from the last layer of LSTM
         if self._hyperparameters["bidirectional"]:
