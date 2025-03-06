@@ -1,7 +1,7 @@
 # Algorithm classification
 
 This repository contains the source code for the ***Source code classification problem***, a paper in which we attempt to determine
-the functionality of a code snippet using programming language processing. We propose a solution in the form of a neural network based on the long short-term memory (LSTM) recurrent network and compare our results to several other papers that had discussed this topic. You can read the full paper [here](.) (TBA).
+the functionality of a code snippet using programming language processing. We propose a solution in the form of a neural network based on the long short-term memory (LSTM) recurrent network and compare our results to several other papers that had discussed this topic. You can read the full paper (in Croatian) [here](https://urn.nsk.hr/urn:nbn:hr:126:228108).
 
 
 ## Usage
